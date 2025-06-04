@@ -1,0 +1,28 @@
+version: "3.8"
+
+services:
+  app:
+    build: .
+    container_name: node-app
+    ports:
+      - "3000:3000"
+    environment:
+      DB_URI: ${DB_URI}
+      DB_PASS: ${DB_PASS}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      PORT: ${PORT}
+    depends_on:
+      - redis
+    command: npm run start
+
+  redis:
+    image: redis:7
+    container_name: redis-server
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+volumes:
+  redis-data:
