@@ -1,0 +1,21 @@
+name: CD Pipeline
+
+on:
+  workflow_run:
+    workflows: ["CI Pipeline"]
+    types:
+      - completed
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Pull latest image
+        run: docker pull ${{ secrets.DOCKER_USERNAME }}/chapter-performance-dashboard-app:latest
+
+      - name: Stop and remove current containers
+        run: docker-compose down
+
+      - name: Start updated containers
+        run: docker-compose up -d
