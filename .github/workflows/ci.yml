@@ -2,22 +2,20 @@ name: Docker Image CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
-
   build:
-
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Login Dockerhub
-      env :
-        DOCKER_USERNAME : ${{secrets.DOCKER_USERNAME}}
-        DOCKER_PASSWORD : ${{secrets.DOCKER_PASSWORD}}
-      run: docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
-    - name: Build the Docker image
-      run: docker build -t chapter-performance-dashboard-app .
-    - name : Push to Dockerhub
-      run : docker push goelarchit824/chapter-performance-dashboard-app:latest
+      - uses: actions/checkout@v4
+      - name: Login Dockerhub
+        env:
+          DOCKER_USERNAME: ${{secrets.DOCKER_USERNAME}}
+          DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
+        run: docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+      - name: Build image
+        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/chapter-performance-dashboard-app .
+      - name: Push image
+        run: docker push ${{ secrets.DOCKER_USERNAME }}/chapter-performance-dashboard-app
