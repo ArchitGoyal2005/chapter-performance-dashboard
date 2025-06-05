@@ -1,9 +1,13 @@
 import express from "express";
 import morgan from "morgan";
+import helmet from "helmet";
+import mongoSanitize from "express-mongo-sanitize";
 
-import chapterRouter from "./routes/chapterRoutes";
 import { rateLimiter } from "./middlewares/rateLimiting";
 import { errorMiddleware } from "./middlewares/error";
+
+import chapterRouter from "./routes/chapterRoutes";
+
 import ErrorHandler from "./utils/Error_Utility_Class";
 
 const app = express();
@@ -12,10 +16,14 @@ app.set("trust proxy", true);
 
 app.use(morgan("dev"));
 
+app.use(helmet());
+
+app.use(rateLimiter);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use(rateLimiter);
+app.use(mongoSanitize());
 
 app.get("/", (req, res) => {
   res.send("Hello World!");

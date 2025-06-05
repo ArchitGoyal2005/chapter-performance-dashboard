@@ -53,7 +53,7 @@ export const rateLimiter = async (
 
       res.status(429).json({
         error: "Too Many Requests",
-        message: `Rate limit exceeded. Maximum ${maxRequests} requests per minute allowed.`,
+        message: `Rate limit exceeded. Please try again after some time!`,
         retryAfter: ttl,
       });
       return;
