@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   app:
-    build: .
+    build: goelarchit824/chapter-performance-dashboard-app:latest
     container_name: node-app
     ports:
       - "3000:3000"
