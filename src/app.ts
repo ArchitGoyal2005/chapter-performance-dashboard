@@ -3,6 +3,8 @@ import morgan from "morgan";
 
 import chapterRouter from "./routes/chapterRoutes";
 import { rateLimiter } from "./middlewares/rateLimiting";
+import { errorMiddleware } from "./middlewares/error";
+import ErrorHandler from "./utils/Error_Utility_Class";
 
 const app = express();
 
@@ -20,5 +22,13 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/v1/chapters", chapterRouter);
+
+app.all("/*path", (req, res, next) => {
+  //unexpected route handler
+  // This will catch all undefined routes and pass an error to the next middleware
+  next(new ErrorHandler(`Cannot find ${req.originalUrl} on this server!`, 404));
+});
+
+app.use(errorMiddleware);
 
 export default app;

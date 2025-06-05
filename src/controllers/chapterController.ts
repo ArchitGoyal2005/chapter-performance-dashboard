@@ -106,6 +106,14 @@ export const getChapterById = TryCatch(
 
 export const uploadChapters = TryCatch(
   async (req: Request, res: Response, next: NextFunction) => {
+    if (req.query.user != "admin")
+      return next(
+        new ErrorHandler(
+          "Unauthorized access! Only an admin can upload chapters",
+          403
+        )
+      );
+
     let chaptersData: any[];
 
     try {
@@ -145,22 +153,68 @@ export const uploadChapters = TryCatch(
       index: number;
     }> = [];
 
-    try {
-      const inserted = await Chapter.insertMany(chaptersData, {
-        ordered: false,
-      });
-      uploadedChapters.push(...inserted);
-    } catch (error: any) {
-      if (error.writeErrors) {
-        error.writeErrors.forEach((writeErr: any) => {
-          failedUploads.push({
-            chapter: writeErr.err.op,
-            errors: [writeErr.err.errmsg || "Insertion failed"],
-            index: writeErr.index,
-          });
-        });
+    const validChapters: any[] = [];
+
+    chaptersData.forEach((chapter, index) => {
+      const errors: string[] = [];
+
+      if (!chapter.class || typeof chapter.class !== "string") {
+        errors.push("Missing or invalid 'class'");
+      }
+
+      if (!chapter.subject || typeof chapter.subject !== "string") {
+        errors.push("Missing or invalid 'subject'");
+      }
+
+      if (!chapter.unit || typeof chapter.unit !== "string") {
+        errors.push("Missing or invalid 'unit'");
+      }
+
+      if (!chapter.chapter || typeof chapter.chapter !== "string") {
+        errors.push("Missing or invalid 'chapter'");
+      }
+
+      if (errors.length > 0) {
+        failedUploads.push({ chapter, errors, index });
       } else {
-        return next(new ErrorHandler("Unexpected error during insertion", 500));
+        validChapters.push(chapter);
+      }
+    });
+
+    if (validChapters.length > 0) {
+      try {
+        const inserted = await Chapter.insertMany(validChapters, {
+          ordered: false,
+          throwOnValidationError: true,
+        });
+        uploadedChapters.push(...inserted);
+      } catch (error: any) {
+        if (error.writeErrors) {
+          error.writeErrors.forEach((writeErr: any) => {
+            failedUploads.push({
+              chapter: writeErr.err.op,
+              errors: [
+                writeErr.err.errmsg
+                  ? writeErr.err.errmsg.startsWith("E11000")
+                    ? "Chapter already exists"
+                    : writeErr.err.errmsg
+                  : "Insertion failed",
+              ],
+              index: writeErr.index,
+            });
+          });
+        } else if (error.name === "ValidationError") {
+          return next(
+            new ErrorHandler(
+              `Mongoose validation failed: ${error.message}`,
+              400
+            )
+          );
+        } else {
+          return next(
+            new ErrorHandler("Unexpected error during insertion", 500)
+          );
+        }
       }
     }
 
@@ -188,7 +242,7 @@ export const uploadChapters = TryCatch(
     };
 
     if (failedUploads.length > 0) {
-      response.failedChapters = failedUploads;
+      response.data.failedChapters = failedUploads;
     }
 
     res.status(201).json(response);

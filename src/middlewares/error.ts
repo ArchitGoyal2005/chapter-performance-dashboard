@@ -2,11 +2,11 @@ import { Request, Response, NextFunction } from "express";
 import ErrorHandler from "../utils/Error_Utility_Class";
 
 export const errorMiddleware = (
-  err: ErrorHandler,
+  err: any,
   req: Request,
   res: Response,
   next: NextFunction
-) => {
+): void => {
   err.message ||= "Internal Server Error";
   err.statusCode ||= 500;
 
@@ -26,7 +26,7 @@ export const errorMiddleware = (
     err.statusCode = 400;
   }
 
-  return res.status(err.statusCode).json({
+  res.status(err.statusCode).json({
     success: false,
     message: err.message,
   });
