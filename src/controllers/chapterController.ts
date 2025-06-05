@@ -3,32 +3,48 @@ import { Request, Response, NextFunction } from "express";
 import { TryCatch } from "../middlewares/error";
 import { Chapter } from "../models/chapterModel";
 import ErrorHandler from "../utils/Error_Utility_Class";
+import { ChapterFilters, ChapterQuery } from "../utils/typings";
+import { validateQueryParams } from "../utils/utils";
+import {
+  CACHE_TTL,
+  DEFAULT_LIMIT,
+  DEFAULT_PAGE,
+  MAX_LIMIT,
+} from "../utils/defaults";
 
 export const getAllChapters = TryCatch(async (req, res, next) => {
-  const {
-    class: cls,
-    unit,
-    status,
-    subject,
-    weakChapters,
-    page = "1",
-    limit = "10",
-  } = req.query;
+  const query = req.query as ChapterQuery;
 
-  const filters: Record<string, any> = {};
-  if (cls) filters.class = cls;
-  if (unit) filters.unit = unit;
-  if (status) filters.status = status;
-  if (subject) filters.subject = subject;
-  if (weakChapters !== undefined)
-    filters.weakChapters = weakChapters === "true";
+  const validationErrors = validateQueryParams(query);
 
-  const pageNum = parseInt(page as string, 10);
-  const limitNum = parseInt(limit as string, 10);
+  if (validationErrors.length > 0) {
+    res.status(400).json({
+      success: false,
+      message: "Invalid query parameters",
+      errors: validationErrors,
+    });
+    return;
+  }
+
+  const filters: ChapterFilters = {};
+
+  if (query.class) filters.class = query.class;
+  if (query.unit) filters.unit = query.unit;
+  if (query.status) filters.status = query.status;
+  if (query.subject) filters.subject = query.subject;
+  if (query.weakChapters !== undefined) {
+    filters.weakChapters = query.weakChapters === "true";
+  }
+
+  const pageNum = Math.max(1, parseInt(query?.page || "0", 10) || DEFAULT_PAGE);
+  const limitNum = Math.min(
+    Math.max(1, parseInt(query?.limit || "0", 10) || DEFAULT_LIMIT),
+    MAX_LIMIT
+  );
 
   const cacheKey = `chapters:${JSON.stringify(
     filters
-  )}:page${page}:limit${limit}`;
+  )}:page${pageNum}:limit${limitNum}`;
   const cached = await redisClient.get(cacheKey);
   if (cached) {
     res.status(200).json(JSON.parse(cached));
@@ -39,9 +55,31 @@ export const getAllChapters = TryCatch(async (req, res, next) => {
     .limit(limitNum);
 
   const total = await Chapter.countDocuments(filters);
-  const response = { chapters, total };
 
-  await redisClient.setex(cacheKey, 3600, JSON.stringify(response)); // Cache for 1 hour
+  const totalPages = Math.ceil(total / limitNum);
+
+  const response = {
+    success: true,
+    message: "Chapters fetched successfully",
+    data: {
+      data: chapters,
+      filters,
+      pagination: {
+        current: pageNum,
+        limit: limitNum,
+        total,
+        pages: totalPages,
+        hasNext: total == 0 && pageNum < totalPages,
+        hasPrev: total == 0 && pageNum > 1,
+      },
+    },
+  };
+
+  if (total == 0) {
+    response.message = "No chapters found matching the given query";
+  }
+
+  await redisClient.setex(cacheKey, CACHE_TTL, JSON.stringify(response));
 
   res.status(200).json(response);
 });
@@ -53,12 +91,15 @@ export const getChapterById = TryCatch(
     const chapter = await Chapter.findById(id);
 
     if (!chapter) {
-      return next(new ErrorHandler("Chapter not found", 400));
+      return next(new ErrorHandler("Chapter not found with the given id", 404));
     }
 
     res.status(200).json({
       success: true,
-      data: chapter,
+      message: "Chapter fetched successfully",
+      data: {
+        data: chapter,
+      },
     });
   }
 );
