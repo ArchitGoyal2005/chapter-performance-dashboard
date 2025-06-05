@@ -1,7 +1,6 @@
 import express from "express";
 import morgan from "morgan";
 import helmet from "helmet";
-import mongoSanitize from "express-mongo-sanitize";
 
 import { rateLimiter } from "./middlewares/rateLimiting";
 import { errorMiddleware } from "./middlewares/error";
@@ -22,8 +21,6 @@ app.use(rateLimiter);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-app.use(mongoSanitize());
 
 app.get("/", (req, res) => {
   res.send("Hello World!");

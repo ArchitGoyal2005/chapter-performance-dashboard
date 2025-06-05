@@ -33,7 +33,7 @@ export const getAllChapters = TryCatch(async (req, res, next) => {
   if (query.status) filters.status = query.status;
   if (query.subject) filters.subject = query.subject;
   if (query.weakChapters !== undefined) {
-    filters.weakChapters = query.weakChapters === "true";
+    filters.isWeakChapter = query.weakChapters === "true";
   }
 
   const pageNum = Math.max(1, parseInt(query?.page || "0", 10) || DEFAULT_PAGE);
@@ -65,12 +65,12 @@ export const getAllChapters = TryCatch(async (req, res, next) => {
       data: chapters,
       filters,
       pagination: {
-        current: pageNum,
+        currentPage: pageNum,
         limit: limitNum,
         total,
         pages: totalPages,
-        hasNext: total == 0 && pageNum < totalPages,
-        hasPrev: total == 0 && pageNum > 1,
+        hasNext: total != 0 && pageNum < totalPages,
+        hasPrev: total != 0 && pageNum > 1,
       },
     },
   };

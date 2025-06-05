@@ -14,7 +14,7 @@ interface ChapterFilters {
   unit?: string;
   status?: string;
   subject?: string;
-  weakChapters?: boolean;
+  isWeakChapter?: boolean;
 }
 
 interface ValidationError {
