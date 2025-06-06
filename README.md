@@ -4,7 +4,7 @@ A comprehensive RESTful API built to simulate a real-world dashboard backend for
 
 ## 🚀 Live API
 
-**Base URL:** `https://mathongo.manantechnosurge.tech`
+**Base URL:** [https://mathongo.manantechnosurge.tech](https://mathongo.manantechnosurge.tech)
 
 ## 📚 Documentation
 
